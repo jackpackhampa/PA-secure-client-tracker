@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>My Issues</h1>
+  <a href="{{ url_for('new_issue') }}" class="btn btn-primary">+ New Issue</a>
+</div>
+
+<form method="GET" action="{{ url_for('dashboard') }}" class="filter-bar">
+  <label>Filter:</label>
+
+  <select name="severity">
+    <option value="">All Severities</option>
+    {% for s in valid_severities %}
+      <option value="{{ s }}" {% if s == current_severity %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="status">
+    <option value="">All Statuses</option>
+    {% for s in valid_statuses %}
+      <option value="{{ s }}" {% if s == current_status %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+
+  <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
+  {% if current_severity or current_status %}
+    <a href="{{ url_for('dashboard') }}" class="btn btn-ghost btn-sm">Clear</a>
+  {% endif %}
+</form>
+
+{% if issues %}
+<table class="issue-table">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Severity</th>
+      <th>Status</th>
+      <th>Created</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for issue in issues %}
+    <tr>
+      <td>
+        <a href="{{ url_for('view_issue', id=issue['id']) }}">{{ issue['title'] }}</a>
+      </td>
+      <td>
+        {% set sev = issue['severity']|lower %}
+        <span class="badge badge--{{ sev }}">{{ issue['severity'] }}</span>
+      </td>
+      <td>
+        {% if issue['status'] == 'In Progress' %}
+          <span class="badge badge--progress">In Progress</span>
+        {% elif issue['status'] == 'Closed' %}
+          <span class="badge badge--closed">Closed</span>
+        {% else %}
+          <span class="badge badge--open">Open</span>
+        {% endif %}
+      </td>
+      <td style="color:var(--color-text-muted);font-size:.85rem;">
+        {{ issue['created_at'][:10] }}
+      </td>
+      <td>
+        <div class="actions-cell">
+          <a href="{{ url_for('edit_issue', id=issue['id']) }}" class="btn btn-ghost btn-sm">Edit</a>
+          <form method="POST" action="{{ url_for('delete_issue', id=issue['id']) }}"
+                style="display:inline"
+                onsubmit="return confirm('Delete this issue? This cannot be undone.')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+  <p>No issues found.</p>
+  {% if current_severity or current_status %}
+    <p><a href="{{ url_for('dashboard') }}">Clear filters</a> or
+       <a href="{{ url_for('new_issue') }}">log a new issue</a>.</p>
+  {% else %}
+    <p><a href="{{ url_for('new_issue') }}">Log your first issue</a> to get started.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
